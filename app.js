@@ -2,9 +2,12 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 
-const Search = require('./Models/search')
+const Search = require('./models/search')
 
 const app = express();
+
+app.set('view engine', 'ejs');
+app.set('views', 'views');
 
 mongoose
 .connect('mongodb+srv://Rudresh:' +
@@ -15,41 +18,58 @@ mongoose
 
 app.use(bodyParser.urlencoded({extended: false}));
 
-app.get('/getData', (req, res, next) => {
+app.get('/', (req, res, next) => {
+    res.status(200).render('home', {title: 'Node Application'});
+})
+
+app.post('/getData', (req, res, next) => {
     Search.
-    find({}).
+    find({name: req.body.Search}).
     then(result => {
         console.log(result);
-        res.send(result[0].name)
+        res.status(200).render('result', {title: result});
+    }).
+    catch(err => {
+        console.log(err);
+    })
+    console.log(req.body.Search);
+});
+
+app.get('/getData/:name', (req, res, next) => {
+    Search.
+    find({name: req.params.name}).
+    then(result => {
+        console.log(result);
+        res.status(200).render('result', {title: result});
     }).
     catch(err => {
         console.log(err);
     })
 });
 
-app.get('/search', (req, res, next) => {
-    res.send('<form action="/result" method="POST"><input type="text" name="Search"><button type="submit">Search Query</button></form>')
+app.get('/addProfile', (req, res, next) => {
+    res.status(200).render('add-profile', {title: 'Node Application'});
 })
 
-app.post('/result', (req, res, next) => {
+app.post('/addition', (req, res, next) => {
     const search = new Search({
         _id: new mongoose.Types.ObjectId(),
-        name: req.body.Search
-    })
+        name: req.body.title
+    }, { versionKey: false });
     search
     .save()
     .then(result => {
         console.log(result);
-        res.send('<h3>Successful Query</h3>');
+        res.redirect('/addProfile');
     })
     .catch(err => {
         console.log(err);
     })
-    console.log(req.body.Search);
+    console.log(req.body.title);
 }) 
 
-app.use('/', (req, res, next) => {
-    res.status(404).send('<h1>Page Not Found</h1');
-})
+app.use((req, res, next) => {
+    res.status(200).render('404', {title: 'Node Application'});
+});
 
 app.listen(3000);
